@@ -1,5 +1,5 @@
 import { CheerioCrawler, Dataset } from "crawlee";
-import { BrowserWindow, app, dialog, ipcMain } from "electron";
+import { BrowserWindow, Menu, app, dialog, globalShortcut, ipcMain } from "electron";
 import { createWriteStream } from "fs";
 import path from "path";
 import { SitemapStream } from "sitemap";
@@ -31,8 +31,18 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Open DevTools in development mode and allow toggling it with the "0" numpad key
+  if (process.env.NODE_ENV === "development") {
+    mainWindow.webContents.openDevTools();
+    globalShortcut.register("num0", () => {
+      mainWindow?.webContents.toggleDevTools();
+    });
+  }
+
+  // Override the shortcut for opening developer tools
+  globalShortcut.register("CmdOrCtrl+Shift+I", () => {
+    return;
+  });
 };
 
 // This method will be called when Electron has finished
@@ -57,8 +67,95 @@ app.on("activate", () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+const isMac = process.platform === "darwin";
+
+const template = [
+  // { role: 'appMenu' }
+  ...(isMac
+    ? [
+        {
+          label: app.name,
+          submenu: [
+            { role: "about" },
+            { type: "separator" },
+            { role: "services" },
+            { type: "separator" },
+            { role: "hide" },
+            { role: "hideOthers" },
+            { role: "unhide" },
+            { type: "separator" },
+            { role: "quit" },
+          ],
+        },
+      ]
+    : []),
+  // { role: 'fileMenu' }
+  {
+    label: "File",
+    submenu: [isMac ? { role: "close" } : { role: "quit" }],
+  },
+  // { role: 'editMenu' }
+  {
+    label: "Edit",
+    submenu: [
+      { role: "undo" },
+      { role: "redo" },
+      { type: "separator" },
+      { role: "cut" },
+      { role: "copy" },
+      { role: "paste" },
+      ...(isMac
+        ? [
+            { role: "pasteAndMatchStyle" },
+            { role: "delete" },
+            { role: "selectAll" },
+            { type: "separator" },
+            {
+              label: "Speech",
+              submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }],
+            },
+          ]
+        : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
+    ],
+  },
+  // { role: 'viewMenu' }
+  {
+    label: "View",
+    submenu: [
+      { role: "reload" },
+      { role: "forceReload" },
+      { type: "separator" },
+      { role: "resetZoom" },
+      { role: "zoomIn" },
+      { role: "zoomOut" },
+      { type: "separator" },
+      { role: "togglefullscreen" },
+    ],
+  },
+  // { role: 'windowMenu' }
+  {
+    label: "Window",
+    submenu: [
+      { role: "minimize" },
+      ...(isMac ? [{ type: "separator" }, { role: "front" }, { type: "separator" }, { role: "window" }] : [{ role: "close" }]),
+    ],
+  },
+  // TODO: Add help menu with link to the documentation
+  // {
+  //   role: "help",
+  //   submenu: [
+  //     {
+  //       label: "Learn More",
+  //       click: async () => {
+  //         await shell.openExternal("https://electronjs.org");
+  //       },
+  //     },
+  //   ],
+  // },
+];
+
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
 
 ipcMain.handle("check-sitemap", async (event, websiteUrl: string) => {
   const pageCount = await checkAndParseSitemap(websiteUrl);
