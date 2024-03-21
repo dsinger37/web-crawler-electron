@@ -63,14 +63,20 @@ ipcMain.handle("check-sitemap", async (event, websiteUrl: string) => {
   return pageCount;
 });
 
+let crawler: CheerioCrawler | null = null;
+let isCrawlCancelled = false;
+
 ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: number, maxConcurrency: number) => {
   const crawledUrls: string[] = [];
   const discoveredUrls: Set<string> = new Set();
 
-  const crawler = new CheerioCrawler({
+  crawler = new CheerioCrawler({
     maxRequestsPerCrawl: maxRequests,
     maxConcurrency,
     async requestHandler({ request, enqueueLinks, $ }) {
+      if (isCrawlCancelled) {
+        return;
+      }
       console.log(`Crawling page: ${request.url}`);
       crawledUrls.push(request.url);
 
@@ -83,18 +89,29 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
       await enqueueLinks({
         strategy: "same-origin",
       });
-      event.sender.send("crawl-progress", crawledUrls.length, discoveredUrls.size);
+      event.sender.send("crawl-progress", crawledUrls.length, discoveredUrls.size, isCrawlCancelled);
     },
     failedRequestHandler: async ({ request }) => {
       console.error(`Request ${request.url} failed too many times`);
     },
   });
 
-  // Seed the crawler with the base URL
   await crawler.run([websiteUrl]);
 
-  // Optionally, store the result in a dataset
+  if (isCrawlCancelled) {
+    console.log("Crawl was cancelled by the user");
+    isCrawlCancelled = false;
+    return { pageCount: crawledUrls.length, discoveredUrlCount: discoveredUrls.size, crawledUrls };
+  }
+
   await Dataset.pushData({ crawledUrls });
 
   return { pageCount: crawledUrls.length, discoveredUrlCount: discoveredUrls.size, crawledUrls };
+});
+
+ipcMain.on("cancel-crawl", () => {
+  if (crawler) {
+    isCrawlCancelled = true;
+    crawler.autoscaledPool?.abort();
+  }
 });

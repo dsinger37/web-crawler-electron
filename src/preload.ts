@@ -12,5 +12,8 @@ import { contextBridge, ipcRenderer } from "electron";
 contextBridge.exposeInMainWorld("electronApi", {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- This is a generic function that can take any arguments
   invoke: (channel: string, ...args: any) => ipcRenderer.invoke(channel, ...args),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- This is a generic function that can take any arguments
   on: (channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => ipcRenderer.on(channel, listener),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- This is a generic function that can take any arguments
+  send: (channel: string, ...args: any) => ipcRenderer.send(channel, ...args),
 });

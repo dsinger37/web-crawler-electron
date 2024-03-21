@@ -2,21 +2,31 @@ import { useState } from "react";
 
 interface CrawlButtonProps {
   websiteUrl: string;
-  onCrawlProgress: (pageCount: number, discoveredUrlCount: number) => void;
+  onCrawlProgress: (pageCount: number, discoveredUrlCount: number, isCrawlCancelled: boolean) => void;
   onCrawlComplete: (pageCount: number, discoveredUrlCount: number, crawledUrls: string[]) => void;
 }
 
 export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete }: CrawlButtonProps) => {
   const [maxRequests, setMaxRequests] = useState(1000);
   const [maxConcurrency, setMaxConcurrency] = useState(10);
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [isCrawlCancelled, setIsCrawlCancelled] = useState(false);
 
   const handleClick = async () => {
-    window.electronApi.on("crawl-progress", (event, pageCount: number, discoveredUrlCount: number) => {
-      onCrawlProgress(pageCount, discoveredUrlCount);
+    setIsCrawling(true);
+    window.electronApi.on("crawl-progress", (event, pageCount: number, discoveredUrlCount: number, isCrawlCancelled: boolean) => {
+      onCrawlProgress(pageCount, discoveredUrlCount, isCrawlCancelled);
     });
 
     const { pageCount, discoveredUrlCount, crawledUrls } = await window.electronApi.invoke("crawl-website", websiteUrl, maxRequests, maxConcurrency);
     onCrawlComplete(pageCount, discoveredUrlCount, crawledUrls);
+    setIsCrawlCancelled(false);
+  };
+
+  const handleCancel = () => {
+    setIsCrawling(false);
+    setIsCrawlCancelled(true);
+    window.electronApi.send("cancel-crawl");
   };
 
   return (
@@ -30,6 +40,9 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete }: Cr
         <input type="number" value={maxConcurrency} onChange={(e) => setMaxConcurrency(Number(e.target.value))} />
       </label>
       <button onClick={handleClick}>Crawl Website</button>
+      <button onClick={handleCancel} disabled={!isCrawling}>
+        {isCrawlCancelled ? "Cancelling..." : "Cancel"}
+      </button>
     </div>
   );
 };
