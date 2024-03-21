@@ -4,6 +4,7 @@
     "name": "David Singer",
     "email": "dsinger@digitalmagistery.com"
   },
+  "description": "A web crawler",
   "license": "UNLICENSED",
   "private": true,
   "version": "0.1.0",
