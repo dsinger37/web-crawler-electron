@@ -3,6 +3,7 @@ import { BrowserWindow, Menu, app, dialog, globalShortcut, ipcMain } from "elect
 import { createWriteStream } from "fs";
 import path from "path";
 import { SitemapStream } from "sitemap";
+import { template } from "./menuTemplate";
 import { checkAndParseSitemap } from "./sitemapUtils";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -11,6 +12,8 @@ if (require("electron-squirrel-startup")) {
 }
 
 let mainWindow: BrowserWindow | null;
+let crawler: CheerioCrawler | null = null;
+let isCrawlCancelled = false;
 
 const createWindow = () => {
   // Create the browser window.
@@ -67,93 +70,6 @@ app.on("activate", () => {
   }
 });
 
-const isMac = process.platform === "darwin";
-
-const template = [
-  // { role: 'appMenu' }
-  ...(isMac
-    ? [
-        {
-          label: app.name,
-          submenu: [
-            { role: "about" },
-            { type: "separator" },
-            { role: "services" },
-            { type: "separator" },
-            { role: "hide" },
-            { role: "hideOthers" },
-            { role: "unhide" },
-            { type: "separator" },
-            { role: "quit" },
-          ],
-        },
-      ]
-    : []),
-  // { role: 'fileMenu' }
-  {
-    label: "File",
-    submenu: [isMac ? { role: "close" } : { role: "quit" }],
-  },
-  // { role: 'editMenu' }
-  {
-    label: "Edit",
-    submenu: [
-      { role: "undo" },
-      { role: "redo" },
-      { type: "separator" },
-      { role: "cut" },
-      { role: "copy" },
-      { role: "paste" },
-      ...(isMac
-        ? [
-            { role: "pasteAndMatchStyle" },
-            { role: "delete" },
-            { role: "selectAll" },
-            { type: "separator" },
-            {
-              label: "Speech",
-              submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }],
-            },
-          ]
-        : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
-    ],
-  },
-  // { role: 'viewMenu' }
-  {
-    label: "View",
-    submenu: [
-      { role: "reload" },
-      { role: "forceReload" },
-      { type: "separator" },
-      { role: "resetZoom" },
-      { role: "zoomIn" },
-      { role: "zoomOut" },
-      { type: "separator" },
-      { role: "togglefullscreen" },
-    ],
-  },
-  // { role: 'windowMenu' }
-  {
-    label: "Window",
-    submenu: [
-      { role: "minimize" },
-      ...(isMac ? [{ type: "separator" }, { role: "front" }, { type: "separator" }, { role: "window" }] : [{ role: "close" }]),
-    ],
-  },
-  // TODO: Add help menu with link to the documentation
-  // {
-  //   role: "help",
-  //   submenu: [
-  //     {
-  //       label: "Learn More",
-  //       click: async () => {
-  //         await shell.openExternal("https://electronjs.org");
-  //       },
-  //     },
-  //   ],
-  // },
-];
-
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
 
@@ -161,9 +77,6 @@ ipcMain.handle("check-sitemap", async (event, websiteUrl: string) => {
   const pageCount = await checkAndParseSitemap(websiteUrl);
   return pageCount;
 });
-
-let crawler: CheerioCrawler | null = null;
-let isCrawlCancelled = false;
 
 ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: number, maxConcurrency: number) => {
   const crawledUrls: string[] = [];
