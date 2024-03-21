@@ -85,31 +85,60 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
   const crawledUrls: string[] = [];
   const discoveredUrls: Set<string> = new Set();
 
+  logger.info("----------------------------- New crawl request received -----------------------------");
   logger.info(`Starting crawl for website: ${websiteUrl}`);
+
+  const defaultAllowedContentTypes = ["text/html", "application/xhtml+xml"];
+  // Add any additional content types to be allowed here, don't forget to also remove their extensions from ignoredExtensionsPattern in the requestHandler
+  const additionalAllowedContentTypes = ["application/json"];
+  const allowedContentTypes = [...defaultAllowedContentTypes, ...additionalAllowedContentTypes];
 
   crawler = new CheerioCrawler({
     maxRequestsPerCrawl: maxRequests,
     maxConcurrency,
+    additionalMimeTypes: additionalAllowedContentTypes,
+    preNavigationHooks: [
+      async (crawlingContext, gotoOptions) => {
+        const { request } = crawlingContext;
+        const response = await fetch(request.url, { method: "HEAD" });
+        const contentType = response.headers.get("content-type");
+
+        if (contentType && !allowedContentTypes.some((type) => contentType.includes(type))) {
+          logger.info(`Skipping link with unsupported content type: ${request.url}`);
+          return false;
+        }
+
+        return gotoOptions;
+      },
+    ],
     async requestHandler({ request, enqueueLinks, $ }) {
       if (isCrawlCancelled) {
         return;
       }
+
       logEachPageCrawled && logger.info(`Crawling page: ${request.url}`);
       crawledUrls.push(request.url);
 
+      const ignoredExtensionsPattern =
+        /\.(pdf|jpg|jpeg|png|gif|svg|mp4|mp3|zip|rar|gz|tar|iso|dmg|exe|msi|bin|7z|apk|torrent|webp|woff|woff2|ttf|otf|eot|ico|css|js|json|xml|csv|xls|xlsx|doc|docx|ppt|pptx)$/i;
+
       const links = $("a[href]")
         .map((_, el) => $(el).attr("href"))
-        .get();
+        .get()
+        .filter((href) => !ignoredExtensionsPattern.test(href));
 
+      // Discovered Urls could possibly be much larger than crawled Urls because it includes all the <a> tags that have an href attribute.
       links.forEach((link) => discoveredUrls.add(link));
 
       await enqueueLinks({
+        // TODO: Add a setting to enable crawling subdomains using the "same-hostname" strategy
         strategy: "same-origin",
+        urls: links,
       });
       event.sender.send("crawl-progress", crawledUrls.length, discoveredUrls.size, isCrawlCancelled);
     },
     failedRequestHandler: async ({ request }) => {
-      console.error(`Request ${request.url} failed too many times`);
+      logger.error(`Request ${request.url} failed too many times`);
     },
   });
 
@@ -124,7 +153,6 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
   }
 
   await Dataset.pushData({ crawledUrls });
-
   return { pageCount: crawledUrls.length, discoveredUrlCount: discoveredUrls.size, crawledUrls };
 });
 
