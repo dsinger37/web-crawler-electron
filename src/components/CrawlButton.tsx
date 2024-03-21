@@ -11,6 +11,7 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete }: Cr
   const [maxConcurrency, setMaxConcurrency] = useState(10);
   const [isCrawling, setIsCrawling] = useState(false);
   const [isCrawlCancelled, setIsCrawlCancelled] = useState(false);
+  const [crawledUrls, setCrawledUrls] = useState<string[]>([]);
 
   const handleClick = async () => {
     setIsCrawling(true);
@@ -19,8 +20,13 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete }: Cr
     });
 
     const { pageCount, discoveredUrlCount, crawledUrls } = await window.electronApi.invoke("crawl-website", websiteUrl, maxRequests, maxConcurrency);
+    setCrawledUrls(crawledUrls);
     onCrawlComplete(pageCount, discoveredUrlCount, crawledUrls);
     setIsCrawlCancelled(false);
+  };
+
+    const handleGenerateSitemap = () => {
+    window.electronApi.send("generate-sitemap", websiteUrl, crawledUrls);
   };
 
   const handleCancel = () => {
@@ -40,6 +46,9 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete }: Cr
         <input type="number" value={maxConcurrency} onChange={(e) => setMaxConcurrency(Number(e.target.value))} />
       </label>
       <button onClick={handleClick}>Crawl Website</button>
+      <button onClick={handleGenerateSitemap} disabled={crawledUrls.length === 0}>
+        Generate Sitemap
+      </button>
       <button onClick={handleCancel} disabled={!isCrawling}>
         {isCrawlCancelled ? "Cancelling..." : "Cancel"}
       </button>

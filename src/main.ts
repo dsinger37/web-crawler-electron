@@ -1,6 +1,8 @@
 import { CheerioCrawler, Dataset } from "crawlee";
-import { BrowserWindow, app, ipcMain } from "electron";
+import { BrowserWindow, app, dialog, ipcMain } from "electron";
+import { createWriteStream } from "fs";
 import path from "path";
+import { SitemapStream } from "sitemap";
 import { checkAndParseSitemap } from "./sitemapUtils";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -113,5 +115,29 @@ ipcMain.on("cancel-crawl", () => {
   if (crawler) {
     isCrawlCancelled = true;
     crawler.autoscaledPool?.abort();
+  }
+});
+
+ipcMain.on("generate-sitemap", async (event, websiteUrl, crawledUrls: string[]) => {
+  const { filePath } = await dialog.showSaveDialog({
+    defaultPath: "sitemap.xml",
+    filters: [{ name: "XML Files", extensions: ["xml"] }],
+  });
+
+  if (filePath) {
+    const sitemapStream = new SitemapStream({ hostname: websiteUrl });
+    const writeStream = createWriteStream(filePath);
+
+    sitemapStream.pipe(writeStream);
+
+    crawledUrls.forEach((url) => {
+      sitemapStream.write({ url });
+    });
+
+    sitemapStream.end();
+
+    writeStream.on("finish", () => {
+      console.log(`Sitemap generated and saved to ${filePath}`);
+    });
   }
 });

@@ -20,7 +20,6 @@ export const App = () => {
   const handleCrawlComplete = (pageCount: number, discoveredUrlCount: number, crawledUrls: string[]) => {
     setCrawledPageCount(pageCount);
     setDiscoveredUrlCount(discoveredUrlCount);
-    console.log("Crawled Urls", crawledUrls);
   };
 
   const onCrawlProgress = (pageCount: number, discoveredUrlCount: number) => {
