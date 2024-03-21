@@ -3,6 +3,7 @@ import { BrowserWindow, Menu, app, dialog, globalShortcut, ipcMain } from "elect
 import { createWriteStream } from "fs";
 import path from "path";
 import { SitemapStream } from "sitemap";
+import { logger } from "./logger";
 import { template } from "./menuTemplate";
 import { checkAndParseSitemap } from "./sitemapUtils";
 
@@ -14,6 +15,8 @@ if (require("electron-squirrel-startup")) {
 let mainWindow: BrowserWindow | null;
 let crawler: CheerioCrawler | null = null;
 let isCrawlCancelled = false;
+// TODO: Add a setting to enable/disable this in one of the menu items
+const logEachPageCrawled = false;
 
 const createWindow = () => {
   // Create the browser window.
@@ -82,6 +85,8 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
   const crawledUrls: string[] = [];
   const discoveredUrls: Set<string> = new Set();
 
+  logger.info(`Starting crawl for website: ${websiteUrl}`);
+
   crawler = new CheerioCrawler({
     maxRequestsPerCrawl: maxRequests,
     maxConcurrency,
@@ -89,7 +94,7 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
       if (isCrawlCancelled) {
         return;
       }
-      console.log(`Crawling page: ${request.url}`);
+      logEachPageCrawled && logger.info(`Crawling page: ${request.url}`);
       crawledUrls.push(request.url);
 
       const links = $("a[href]")
@@ -111,9 +116,11 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
   await crawler.run([websiteUrl]);
 
   if (isCrawlCancelled) {
-    console.log("Crawl was cancelled by the user");
+    logger.info(`Crawl cancelled by the user. Pages crawled before cancellation: ${crawledUrls.length}`);
     isCrawlCancelled = false;
     return { pageCount: crawledUrls.length, discoveredUrlCount: discoveredUrls.size, crawledUrls };
+  } else {
+    logger.info(`Crawl completed. Pages crawled: ${crawledUrls.length}`);
   }
 
   await Dataset.pushData({ crawledUrls });
@@ -123,6 +130,7 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
 
 ipcMain.on("cancel-crawl", () => {
   if (crawler) {
+    logger.info("Crawl cancellation requested by the user");
     isCrawlCancelled = true;
     crawler.autoscaledPool?.abort();
   }
@@ -147,7 +155,7 @@ ipcMain.on("generate-sitemap", async (event, websiteUrl, crawledUrls: string[]) 
     sitemapStream.end();
 
     writeStream.on("finish", () => {
-      console.log(`Sitemap generated and saved to ${filePath}`);
+      logger.info(`Sitemap generated and saved to ${filePath}`);
     });
   }
 });
