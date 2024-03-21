@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { CheerioCrawler, Dataset } from "crawlee";
+import { BrowserWindow, app, ipcMain } from "electron";
 import path from "path";
 import { checkAndParseSitemap } from "./sitemapUtils";
 
@@ -56,7 +57,44 @@ app.on("activate", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
 ipcMain.handle("check-sitemap", async (event, websiteUrl: string) => {
   const pageCount = await checkAndParseSitemap(websiteUrl);
   return pageCount;
+});
+
+ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: number, maxConcurrency: number) => {
+  const crawledUrls: string[] = [];
+  const discoveredUrls: Set<string> = new Set();
+
+  const crawler = new CheerioCrawler({
+    maxRequestsPerCrawl: maxRequests,
+    maxConcurrency,
+    async requestHandler({ request, enqueueLinks, $ }) {
+      console.log(`Crawling page: ${request.url}`);
+      crawledUrls.push(request.url);
+
+      const links = $("a[href]")
+        .map((_, el) => $(el).attr("href"))
+        .get();
+
+      links.forEach((link) => discoveredUrls.add(link));
+
+      await enqueueLinks({
+        strategy: "same-origin",
+      });
+      event.sender.send("crawl-progress", crawledUrls.length, discoveredUrls.size);
+    },
+    failedRequestHandler: async ({ request }) => {
+      console.error(`Request ${request.url} failed too many times`);
+    },
+  });
+
+  // Seed the crawler with the base URL
+  await crawler.run([websiteUrl]);
+
+  // Optionally, store the result in a dataset
+  await Dataset.pushData({ crawledUrls });
+
+  return { pageCount: crawledUrls.length, discoveredUrlCount: discoveredUrls.size, crawledUrls };
 });
