@@ -8,6 +8,8 @@ export const App = () => {
   const [sitemapPageCount, setSitemapPageCount] = useState<number | null>(null);
   const [crawledPageCount, setCrawledPageCount] = useState<number | null>(null);
   const [discoveredUrlCount, setDiscoveredUrlCount] = useState<number | null>(null);
+  const [sitemapChecked, setSitemapChecked] = useState(false);
+  const [isCrawlCancelled, setIsCrawlCancelled] = useState(false);
 
   const handleWebsiteInputChange = (url: string) => {
     setWebsiteUrl(url);
@@ -15,6 +17,7 @@ export const App = () => {
 
   const handleSitemapParsed = (pageCount: number) => {
     setSitemapPageCount(pageCount);
+    setSitemapChecked(true);
   };
 
   const handleCrawlComplete = (pageCount: number, discoveredUrlCount: number, crawledUrls: string[]) => {
@@ -29,13 +32,26 @@ export const App = () => {
 
   return (
     <div>
-      <h1>Website Crawler</h1>
-      <WebsiteInput value={websiteUrl} onChange={handleWebsiteInputChange} />
-      <SitemapButton websiteUrl={websiteUrl} onSitemapParsed={handleSitemapParsed} />
-      <CrawlButton websiteUrl={websiteUrl} onCrawlComplete={handleCrawlComplete} onCrawlProgress={onCrawlProgress} />
-      {sitemapPageCount !== null ? <p>Pages found in sitemap: {sitemapPageCount}</p> : <p>No sitemaps found</p>}
-      {crawledPageCount !== null ? <p>Pages crawled: {crawledPageCount}</p> : null}
-      {discoveredUrlCount !== null ? <p>URLs discovered: {discoveredUrlCount}</p> : null}
+      <h1 className="text-4xl text-center mb-6">Website Crawler</h1>
+      <WebsiteInput value={websiteUrl} onChange={handleWebsiteInputChange} className="mb-6" />
+      <SitemapButton websiteUrl={websiteUrl} onSitemapParsed={handleSitemapParsed} setSitemapChecked={setSitemapChecked} className="mb-6" />
+      <CrawlButton
+        websiteUrl={websiteUrl}
+        onCrawlComplete={handleCrawlComplete}
+        onCrawlProgress={onCrawlProgress}
+        isCrawlCancelled={isCrawlCancelled}
+        setIsCrawlCancelled={setIsCrawlCancelled}
+        className="mb-6"
+      />
+      {sitemapPageCount !== null && sitemapChecked ? <p className="mb-6">Pages found in sitemap: {sitemapPageCount}</p> : null}
+      {sitemapChecked && sitemapPageCount === null ? <p className="mb-6">No sitemaps found</p> : null}
+      {isCrawlCancelled ? <p className="mb-6">Crawl cancelled</p> : null}
+      {crawledPageCount !== null ? (
+        <p className="mb-6">
+          Pages crawled{isCrawlCancelled ? " before cancellation" : null}: {crawledPageCount}
+        </p>
+      ) : null}
+      {discoveredUrlCount !== null ? <p className="mb-6">URLs discovered: {discoveredUrlCount}</p> : null}
     </div>
   );
 };
