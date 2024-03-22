@@ -1,4 +1,4 @@
-import { CheerioCrawler, Dataset } from "crawlee";
+import { CheerioCrawler } from "crawlee";
 import { BrowserWindow, Menu, app, dialog, globalShortcut, ipcMain } from "electron";
 import { createWriteStream } from "fs";
 import path from "path";
@@ -152,7 +152,8 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
     logger.info(`Crawl completed. Pages crawled: ${crawledUrls.length}`);
   }
 
-  await Dataset.pushData({ crawledUrls });
+  // NOTE: Not using this for now, but it's here for future use
+  // await Dataset.pushData({ crawledUrls });
   return { pageCount: crawledUrls.length, discoveredUrlCount: discoveredUrls.size, crawledUrls };
 });
 

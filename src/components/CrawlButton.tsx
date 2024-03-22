@@ -12,7 +12,7 @@ interface CrawlButtonProps {
 }
 
 export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCrawlCancelled, setIsCrawlCancelled, className }: CrawlButtonProps) => {
-  const [maxRequests, setMaxRequests] = useState(1000);
+  const [maxRequests, setMaxRequests] = useState(10000);
   const [maxConcurrency, setMaxConcurrency] = useState(10);
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawledUrls, setCrawledUrls] = useState<string[]>([]);
@@ -43,6 +43,7 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCr
   return (
     <div className={className}>
       <h2 className="text-center text-2xl mb-5">Crawl Settings</h2>
+      <div className="flex space-x-5">
       <label>
         Max Requests:
         <Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(Number(e.target.value))} className="mb-6 mt-2" />
@@ -51,7 +52,8 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCr
         Max Concurrency:
         <Input type="number" value={maxConcurrency} onChange={(e) => setMaxConcurrency(Number(e.target.value))} className="mb-6 mt-2" />
       </label>
-      <Button onClick={handleClick} className="mr-2">
+      </div>
+      <Button onClick={handleClick} disabled={!websiteUrl || isCrawling} className="mr-2">
         Crawl Website
       </Button>
       <Button onClick={handleGenerateSitemap} disabled={crawledUrls.length === 0} className="mr-2">
