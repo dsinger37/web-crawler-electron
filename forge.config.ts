@@ -9,7 +9,10 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack:
+        "**/{node_modules/header-generator/data_files/input-network-definition.zip,node_modules/header-generator/data_files/header-network-definition.zip}",
+    },
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ["darwin"]), new MakerRpm({}), new MakerDeb({})],

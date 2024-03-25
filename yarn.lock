@@ -5039,7 +5039,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"header-generator@npm:^2.1.41, header-generator@npm:^2.1.49":
+"header-generator@npm:2.1.49":
   version: 2.1.49
   resolution: "header-generator@npm:2.1.49"
   dependencies:
@@ -5048,6 +5048,18 @@ __metadata:
     ow: "npm:^0.28.1"
     tslib: "npm:^2.4.0"
   checksum: 10c0/3909110fc5c949321247d2e98c8b39fca1c832224563d77eb125f6973a7f05a03c192aaaba67fb0b0164710b75c05c7c8b9544bbf7dde53607de0e4000b56652
+  languageName: node
+  linkType: hard
+
+"header-generator@patch:header-generator@npm%3A2.1.49#~/.yarn/patches/header-generator-npm-2.1.49-ccb42d1d58.patch":
+  version: 2.1.49
+  resolution: "header-generator@patch:header-generator@npm%3A2.1.49#~/.yarn/patches/header-generator-npm-2.1.49-ccb42d1d58.patch::version=2.1.49&hash=ec60b4"
+  dependencies:
+    browserslist: "npm:^4.21.1"
+    generative-bayesian-network: "npm:^2.1.49"
+    ow: "npm:^0.28.1"
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/65862b44a335fddf1acfe81714f6ce5d0a7c971d241317d1be79a637d30396ff3f38b7f0374b49fc174cbeba94cc12b32966ba960d708b9f3ce045ab6323a52b
   languageName: node
   linkType: hard
 

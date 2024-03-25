@@ -26,30 +26,34 @@
     "@electron-forge/plugin-fuses": "^7.2.0",
     "@electron-forge/plugin-vite": "^7.3.0",
     "@electron/fuses": "^1.7.0",
-    "@headlessui/react": "^2.0.0-alpha.4",
     "@types/react": "^18.2.67",
     "@types/react-dom": "^18.2.22",
     "@typescript-eslint/eslint-plugin": "^7.3.1",
     "@typescript-eslint/parser": "^7.3.1",
-    "autoprefixer": "^10.4.19",
-    "clsx": "^2.1.0",
     "electron": "29.1.5",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.25.0",
-    "lightningcss": "^1.24.1",
-    "postcss": "^8.4.38",
-    "sitemap": "^7.1.1",
-    "tailwindcss": "^3.4.1",
     "ts-node": "^10.0.0",
     "typescript": "^5.4.3",
-    "vite": "^5.0.12",
-    "winston": "^3.12.0"
+    "vite": "^5.0.12"
   },
   "dependencies": {
+    "@headlessui/react": "^2.0.0-alpha.4",
+    "autoprefixer": "^10.4.19",
+    "clsx": "^2.1.0",
     "crawlee": "^3.8.1",
     "electron-squirrel-startup": "^1.0.0",
+    "lightningcss": "^1.24.1",
+    "postcss": "^8.4.38",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sitemap": "^7.1.1",
+    "tailwindcss": "^3.4.1",
+    "winston": "^3.12.0"
   },
-  "packageManager": "yarn@4.1.1"
+  "packageManager": "yarn@4.1.1",
+  "resolutions": {
+    "header-generator@npm:^2.1.49": "patch:header-generator@npm%3A2.1.49#~/.yarn/patches/header-generator-npm-2.1.49-ccb42d1d58.patch",
+    "header-generator@npm:^2.1.41": "patch:header-generator@npm%3A2.1.49#~/.yarn/patches/header-generator-npm-2.1.49-ccb42d1d58.patch"
+  }
 }
