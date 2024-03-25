@@ -1,8 +1,8 @@
 diff --git a/header-generator.js b/header-generator.js
-index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f407029327898 100644
+index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..ab76e1252fad4d45b104968a1ffd0789e04dafa6 100644
 --- a/header-generator.js
 +++ b/header-generator.js
-@@ -7,346 +7,377 @@ const generative_bayesian_network_1 = require("generative-bayesian-network");
+@@ -7,346 +7,390 @@ const generative_bayesian_network_1 = require("generative-bayesian-network");
  const ow_1 = tslib_1.__importDefault(require("ow"));
  const constants_1 = require("./constants");
  const utils_1 = require("./utils");
@@ -279,19 +279,49 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 -                delete generatedSample[attribute];
 -            if (attribute.startsWith('*') || generatedSample[attribute] === constants_1.MISSING_VALUE_DATASET_TOKEN)
 -                delete generatedSample[attribute];
+-        }
+-        // Order the headers in an order depending on the browser
+-        return this.orderHeaders({
+-            ...generatedSample,
+-            ...requestDependentHeaders,
+-        }, this.headersOrder[generatedHttpAndBrowser.name]);
 +
-+    // HACK: This is a hack to make the library work in the Electron environment, since __dirname points to resources/app.asar but we need it to point to resources/app.asar.unpacked because the two referenced zip files need to be unpacked.
-+    this.inputGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({
-+      path: path.join(process.resourcesPath, "app.asar.unpacked", "node_modules", "header-generator", "data_files", "input-network-definition.zip"),
-+    });
-+    this.headerGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({
-+      path: path.join(process.resourcesPath, "app.asar.unpacked", "node_modules", "header-generator", "data_files", "header-network-definition.zip"),
-+    });
-+
-+    // Original code from the library
-+    // __dirname points to resources/app.asar but we need it to point to resources/app.asar.unpacked
-+    // this.inputGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({ path: `${__dirname}/data_files/input-network-definition.zip` });
-+    // this.headerGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({ path: `${__dirname}/data_files/header-network-definition.zip` });
++    // HACK: This is a hack to make the library work in the Electron environment, __dirname points to resources/app.asar when a build is made but we need it to point to resources/app.asar.unpacked because the two referenced zip files need to be unpacked.
++    if (process.env.NODE_ENV === "development") {
++      // Original code from the library
++      // __dirname points to resources/app.asar when a build is made but we need it to point to resources/app.asar.unpacked in production
++      this.inputGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({
++        path: `${__dirname}/data_files/input-network-definition.zip`,
++      });
++      this.headerGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({
++        path: `${__dirname}/data_files/header-network-definition.zip`,
++      });
++    } else {
++      this.inputGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({
++        path: path.join(process.resourcesPath, "app.asar.unpacked", "node_modules", "header-generator", "data_files", "input-network-definition.zip"),
++      });
++      this.headerGeneratorNetwork = new generative_bayesian_network_1.BayesianNetwork({
++        path: path.join(
++          process.resourcesPath,
++          "app.asar.unpacked",
++          "node_modules",
++          "header-generator",
++          "data_files",
++          "header-network-definition.zip"
++        ),
++      });
+     }
+-    /**
+-    * Returns a new object that contains ordered headers.
+-    * @param headers Specifies known values of headers dependent on the particular request.
+-    * @param order An array of ordered header names, optional (will be deducted from `user-agent`).
+-    */
+-    orderHeaders(headers, order = this.getOrderFromUserAgent(headers)) {
+-        const orderedSample = {};
+-        for (const attribute of order) {
+-            if (attribute in headers) {
+-                orderedSample[attribute] = headers[attribute];
+-            }
 +  }
 +  /**
 +   * Generates a single set of ordered headers using a combination of the default options specified in the constructor
@@ -319,21 +349,8 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 +          });
 +          return acc;
          }
--        // Order the headers in an order depending on the browser
--        return this.orderHeaders({
--            ...generatedSample,
--            ...requestDependentHeaders,
--        }, this.headersOrder[generatedHttpAndBrowser.name]);
--    }
--    /**
--    * Returns a new object that contains ordered headers.
--    * @param headers Specifies known values of headers dependent on the particular request.
--    * @param order An array of ordered header names, optional (will be deducted from `user-agent`).
--    */
--    orderHeaders(headers, order = this.getOrderFromUserAgent(headers)) {
--        const orderedSample = {};
--        for (const attribute of order) {
--            if (attribute in headers) {
+-        for (const attribute of Object.keys(headers)) {
+-            if (!order.includes(attribute)) {
 -                orderedSample[attribute] = headers[attribute];
 +        acc[key] = value.filter((x) => (http1Values?.[key]?.includes(x) || http2Values?.[key]?.includes(x)) ?? true);
 +        return acc;
@@ -364,14 +381,22 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 +              return [name, value];
              }
 -        }
--        for (const attribute of Object.keys(headers)) {
--            if (!order.includes(attribute)) {
--                orderedSample[attribute] = headers[attribute];
+-        return orderedSample;
+-    }
+-    _prepareBrowsersConfig(browsers, browserListQuery, httpVersion) {
+-        let finalBrowsers = browsers;
+-        if (browserListQuery) {
+-            finalBrowsers = (0, utils_1.getBrowsersFromQuery)(browserListQuery);
+-        }
+-        return finalBrowsers.map((browser) => {
+-            if (typeof browser === 'string') {
+-                return { name: browser, httpVersion };
 +            if (["dnt", "rtt", "ect"].includes(name)) {
 +              return [name.toUpperCase(), value];
              }
--        }
--        return orderedSample;
+-            browser.httpVersion = httpVersion;
+-            return browser;
+-        });
 +            return [pascalize(name), value];
 +          })
 +        );
@@ -387,28 +412,6 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 +      delete relaxedOptions[relaxationKey];
 +      return this.getHeaders(relaxedOptions, requestDependentHeaders, userAgentValues);
      }
--    _prepareBrowsersConfig(browsers, browserListQuery, httpVersion) {
--        let finalBrowsers = browsers;
--        if (browserListQuery) {
--            finalBrowsers = (0, utils_1.getBrowsersFromQuery)(browserListQuery);
--        }
--        return finalBrowsers.map((browser) => {
--            if (typeof browser === 'string') {
--                return { name: browser, httpVersion };
--            }
--            browser.httpVersion = httpVersion;
--            return browser;
--        });
-+    // Generate the actual headers
-+    const generatedSample = this.headerGeneratorNetwork.generateSample(inputSample);
-+    // Manually fill the accept-language header with random ordering of the locales from input
-+    const generatedHttpAndBrowser = this.prepareHttpBrowserObject(generatedSample[constants_1.BROWSER_HTTP_NODE_NAME]);
-+    let secFetchAttributeNames = constants_1.HTTP2_SEC_FETCH_ATTRIBUTES;
-+    let acceptLanguageFieldName = "accept-language";
-+    if (generatedHttpAndBrowser.httpVersion !== "2") {
-+      acceptLanguageFieldName = "Accept-Language";
-+      secFetchAttributeNames = constants_1.HTTP1_SEC_FETCH_ATTRIBUTES;
-     }
 -    _getBrowserHttpOptions(browsers) {
 -        const browserHttpOptions = [];
 -        for (const browser of browsers) {
@@ -423,6 +426,28 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 -            }
 -        }
 -        return browserHttpOptions;
++    // Generate the actual headers
++    const generatedSample = this.headerGeneratorNetwork.generateSample(inputSample);
++    // Manually fill the accept-language header with random ordering of the locales from input
++    const generatedHttpAndBrowser = this.prepareHttpBrowserObject(generatedSample[constants_1.BROWSER_HTTP_NODE_NAME]);
++    let secFetchAttributeNames = constants_1.HTTP2_SEC_FETCH_ATTRIBUTES;
++    let acceptLanguageFieldName = "accept-language";
++    if (generatedHttpAndBrowser.httpVersion !== "2") {
++      acceptLanguageFieldName = "Accept-Language";
++      secFetchAttributeNames = constants_1.HTTP1_SEC_FETCH_ATTRIBUTES;
+     }
+-    _getPossibleAttributeValues(headerOptions) {
+-        const { browsers: optionsBrowser, browserListQuery, httpVersion, operatingSystems } = headerOptions;
+-        const browsers = this._prepareBrowsersConfig(optionsBrowser, browserListQuery, httpVersion);
+-        // Find known browsers compatible with the input
+-        const browserHttpOptions = this._getBrowserHttpOptions(browsers);
+-        const possibleAttributeValues = {};
+-        possibleAttributeValues[constants_1.BROWSER_HTTP_NODE_NAME] = browserHttpOptions;
+-        possibleAttributeValues[constants_1.OPERATING_SYSTEM_NODE_NAME] = operatingSystems;
+-        if (headerOptions.devices) {
+-            possibleAttributeValues[constants_1.DEVICE_NODE_NAME] = headerOptions.devices;
+-        }
+-        return possibleAttributeValues;
 +    generatedSample[acceptLanguageFieldName] = this._getAcceptLanguageField(headerOptions.locales);
 +    const isChrome = generatedHttpAndBrowser.name === "chrome";
 +    const isFirefox = generatedHttpAndBrowser.name === "firefox";
@@ -437,22 +462,6 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 +      generatedSample[secFetchAttributeNames.mode] = "navigate";
 +      generatedSample[secFetchAttributeNames.user] = "?1";
 +      generatedSample[secFetchAttributeNames.dest] = "document";
-     }
--    _getPossibleAttributeValues(headerOptions) {
--        const { browsers: optionsBrowser, browserListQuery, httpVersion, operatingSystems } = headerOptions;
--        const browsers = this._prepareBrowsersConfig(optionsBrowser, browserListQuery, httpVersion);
--        // Find known browsers compatible with the input
--        const browserHttpOptions = this._getBrowserHttpOptions(browsers);
--        const possibleAttributeValues = {};
--        possibleAttributeValues[constants_1.BROWSER_HTTP_NODE_NAME] = browserHttpOptions;
--        possibleAttributeValues[constants_1.OPERATING_SYSTEM_NODE_NAME] = operatingSystems;
--        if (headerOptions.devices) {
--            possibleAttributeValues[constants_1.DEVICE_NODE_NAME] = headerOptions.devices;
--        }
--        return possibleAttributeValues;
-+    for (const attribute of Object.keys(generatedSample)) {
-+      if (attribute.toLowerCase() === "connection" && generatedSample[attribute] === "close") delete generatedSample[attribute];
-+      if (attribute.startsWith("*") || generatedSample[attribute] === constants_1.MISSING_VALUE_DATASET_TOKEN) delete generatedSample[attribute];
      }
 -    _getAcceptLanguageField(localesFromOptions) {
 -        let locales = localesFromOptions;
@@ -474,6 +483,10 @@ index 0c7779f09ae08769a389a1edc0dab1c3ba8d4848..d9e1f31392f246588a35671ce05f4070
 -                if (!highLevelEquivalentPresent)
 -                    highLevelLocales.push(locale);
 -            }
++    for (const attribute of Object.keys(generatedSample)) {
++      if (attribute.toLowerCase() === "connection" && generatedSample[attribute] === "close") delete generatedSample[attribute];
++      if (attribute.startsWith("*") || generatedSample[attribute] === constants_1.MISSING_VALUE_DATASET_TOKEN) delete generatedSample[attribute];
++    }
 +    // Order the headers in an order depending on the browser
 +    return this.orderHeaders(
 +      {
