@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "./base/Button";
+import { Description, Field, Label } from "./base/Fieldset";
 import { Input } from "./base/Input";
 
 interface CrawlButtonProps {
@@ -16,6 +17,7 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCr
   const [maxConcurrency, setMaxConcurrency] = useState(10);
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawledUrls, setCrawledUrls] = useState<string[]>([]);
+  const [urlsToExclude, setUrlsToExclude] = useState<string[]>([]);
 
   const handleClick = async () => {
     setIsCrawlCancelled(false);
@@ -24,7 +26,13 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCr
       onCrawlProgress(pageCount, discoveredUrlCount, isCrawlCancelled);
     });
 
-    const { pageCount, discoveredUrlCount, crawledUrls } = await window.electronApi.invoke("crawl-website", websiteUrl, maxRequests, maxConcurrency);
+    const { pageCount, discoveredUrlCount, crawledUrls } = await window.electronApi.invoke(
+      "crawl-website",
+      websiteUrl,
+      maxRequests,
+      maxConcurrency,
+      urlsToExclude
+    );
     setIsCrawling(false);
     setCrawledUrls(crawledUrls);
     onCrawlComplete(pageCount, discoveredUrlCount, crawledUrls);
@@ -40,18 +48,27 @@ export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCr
     window.electronApi.send("cancel-crawl");
   };
 
+  const handleUrlsToExclude = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrlsToExclude(e.target.value.split(","));
+  };
+
   return (
     <div className={className}>
       <h2 className="text-center text-2xl mb-5">Crawl Settings</h2>
       <div className="flex space-x-5">
-      <label>
-        Max Requests:
-        <Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(Number(e.target.value))} className="mb-6 mt-2" />
-      </label>
-      <label>
-        Max Concurrency:
-        <Input type="number" value={maxConcurrency} onChange={(e) => setMaxConcurrency(Number(e.target.value))} className="mb-6 mt-2" />
-      </label>
+        <label>
+          Max Requests:
+          <Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(Number(e.target.value))} className="mb-6 mt-2" />
+        </label>
+        <label>
+          Max Concurrency:
+          <Input type="number" value={maxConcurrency} onChange={(e) => setMaxConcurrency(Number(e.target.value))} className="mb-6 mt-2" />
+        </label>
+        <Field>
+          <Label>URLs To Exclude:</Label>
+          <Description>Separate URLs with a comma</Description>
+          <Input type="text" value={urlsToExclude} onChange={handleUrlsToExclude} className="mb-6 mt-2" />
+        </Field>
       </div>
       <Button onClick={handleClick} disabled={!websiteUrl || isCrawling} className="mr-2">
         Crawl Website

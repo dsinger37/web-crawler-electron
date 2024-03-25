@@ -81,7 +81,7 @@ ipcMain.handle("check-sitemap", async (event, websiteUrl: string) => {
   return pageCount;
 });
 
-ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: number, maxConcurrency: number) => {
+ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: number, maxConcurrency: number, urlsToExclude: string[]) => {
   const crawledUrls: string[] = [];
   const discoveredUrls: Set<string> = new Set();
 
@@ -103,6 +103,7 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
         const response = await fetch(request.url, { method: "HEAD" });
         const contentType = response.headers.get("content-type");
 
+        // NOTE: This check will make sure that only supported content types are crawled (e.g. the default content types and any additional ones added to the additionalAllowedContentTypes array). This is to prevent crawling content types that were missed in the ignoredExtensionsPattern in the requestHandler.
         if (contentType && !allowedContentTypes.some((type) => contentType.includes(type))) {
           logger.info(`Skipping link with unsupported content type: ${request.url}`);
           return false;
@@ -126,14 +127,24 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
         .map((_, el) => $(el).attr("href"))
         .get()
         .filter((href) => !ignoredExtensionsPattern.test(href));
+      const filteredLinks = links.filter((link) => {
+        return !urlsToExclude.some((urlSegment) => {
+          const urlSegmentPattern = new RegExp(`^${websiteUrl}/${urlSegment}(/|$)`);
+          // TODO: Add a log message here to show which URLs are being excluded. This should probably be sent to a different file than the main log file to keep the main log file clean.
+          return urlSegmentPattern.test(link);
+        });
+      });
 
       // Discovered Urls could possibly be much larger than crawled Urls because it includes all the <a> tags that have an href attribute.
-      links.forEach((link) => discoveredUrls.add(link));
+      // We're not adding excluded URLs to the discoveredUrls set because they're not going to be crawled.
+      // This is just to give the user an idea of how many URLs were found on the website. If we want to include excluded URLs in the count, we can do that by using "links" instead of "filteredLinks".
+      // NOTE: We could possibly add a setting to include/exclude excluded URLs from the discovered URL count
+      filteredLinks.forEach((link) => discoveredUrls.add(link));
 
       await enqueueLinks({
         // TODO: Add a setting to enable crawling subdomains using the "same-hostname" strategy
         strategy: "same-origin",
-        urls: links,
+        urls: filteredLinks,
       });
       event.sender.send("crawl-progress", crawledUrls.length, discoveredUrls.size, isCrawlCancelled);
     },
