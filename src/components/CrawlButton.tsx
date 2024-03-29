@@ -13,8 +13,8 @@ interface CrawlButtonProps {
 }
 
 export const CrawlButton = ({ websiteUrl, onCrawlProgress, onCrawlComplete, isCrawlCancelled, setIsCrawlCancelled, className }: CrawlButtonProps) => {
-  const [maxRequests, setMaxRequests] = useState(10000);
-  const [maxConcurrency, setMaxConcurrency] = useState(10);
+  const [maxRequests, setMaxRequests] = useState(20000);
+  const [maxConcurrency, setMaxConcurrency] = useState(20);
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawledUrls, setCrawledUrls] = useState<string[]>([]);
   const [urlsToExclude, setUrlsToExclude] = useState<string[]>([]);

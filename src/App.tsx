@@ -9,6 +9,7 @@ export const App = () => {
   const [crawledPageCount, setCrawledPageCount] = useState<number | null>(null);
   const [discoveredUrlCount, setDiscoveredUrlCount] = useState<number | null>(null);
   const [sitemapChecked, setSitemapChecked] = useState(false);
+  const [parsingSitemap, setParsingSitemap] = useState(false);
   const [isCrawlCancelled, setIsCrawlCancelled] = useState(false);
 
   const handleWebsiteInputChange = (url: string) => {
@@ -34,16 +35,17 @@ export const App = () => {
     <div>
       <h1 className="text-4xl text-center mb-6">Website Crawler</h1>
       <WebsiteInput value={websiteUrl} onChange={handleWebsiteInputChange} className="mb-6" />
-      <SitemapButton websiteUrl={websiteUrl} onSitemapParsed={handleSitemapParsed} setSitemapChecked={setSitemapChecked} className="mb-6" />
+      <SitemapButton websiteUrl={websiteUrl} onSitemapParsed={handleSitemapParsed} setSitemapChecked={setSitemapChecked} setParsingSitemap={setParsingSitemap} className="mb-6" />
+      {parsingSitemap ? <p className="mb-6">Parsing sitemap...</p> : null}
+      {sitemapPageCount !== null && sitemapChecked ? <p>Pages found in sitemap: {sitemapPageCount}</p> : null}
       <CrawlButton
         websiteUrl={websiteUrl}
         onCrawlComplete={handleCrawlComplete}
         onCrawlProgress={onCrawlProgress}
         isCrawlCancelled={isCrawlCancelled}
         setIsCrawlCancelled={setIsCrawlCancelled}
-        className="mb-6"
+        className="mb-6 mt-10"
       />
-      {sitemapPageCount !== null && sitemapChecked ? <p className="mb-6">Pages found in sitemap: {sitemapPageCount}</p> : null}
       {sitemapChecked && sitemapPageCount === null ? <p className="mb-6">No sitemaps found</p> : null}
       {isCrawlCancelled ? <p className="mb-6">Crawl cancelled</p> : null}
       {crawledPageCount !== null ? (
