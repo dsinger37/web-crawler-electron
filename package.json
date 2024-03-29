@@ -7,7 +7,7 @@
   "description": "A web crawler",
   "license": "UNLICENSED",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
