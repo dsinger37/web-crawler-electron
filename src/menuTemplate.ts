@@ -73,16 +73,9 @@ export const template = [
       ...(isMac ? [{ type: "separator" }, { role: "front" }, { type: "separator" }, { role: "window" }] : [{ role: "close" }]),
     ],
   },
-  // TODO: Add help menu with link to the documentation
-  // {
-  //   role: "help",
-  //   submenu: [
-  //     {
-  //       label: "Learn More",
-  //       click: async () => {
-  //         await shell.openExternal("https://electronjs.org");
-  //       },
-  //     },
-  //   ],
-  // },
+  // TODO: Add help menu link to the documentation
+  {
+    role: "help",
+    submenu: [],
+  },
 ] as MenuItemConstructorOptions[];

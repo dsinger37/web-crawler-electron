@@ -1,5 +1,5 @@
 import { CheerioCrawler } from "crawlee";
-import { BrowserWindow, Menu, app, dialog, globalShortcut, ipcMain } from "electron";
+import { BrowserWindow, Menu, MenuItem, app, dialog, globalShortcut, ipcMain } from "electron";
 import { createWriteStream } from "fs";
 import path from "path";
 import { SitemapStream } from "sitemap";
@@ -18,6 +18,9 @@ let isCrawlCancelled = false;
 // TODO: Add a setting to enable/disable this in one of the menu items
 const logEachPageCrawled = false;
 
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -30,17 +33,18 @@ const createWindow = () => {
     },
   });
 
-  // and load the index.html of the app.
+  mainWindow.webContents.openDevTools();
+
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  // Open DevTools in development mode and allow toggling it with the "0" numpad key
+  // Open DevTools in development mode and allow toggling it with CmdOrCtrl+num0
   if (process.env.NODE_ENV === "development") {
     mainWindow.webContents.openDevTools();
-    globalShortcut.register("num0", () => {
+    globalShortcut.register("CmdOrCtrl+num0", () => {
       mainWindow?.webContents.toggleDevTools();
     });
   }
@@ -50,6 +54,46 @@ const createWindow = () => {
     return;
   });
 };
+
+// Create the about window
+const createAboutWindow = () => {
+  const aboutWindow = new BrowserWindow({
+    width: 300,
+    height: 200,
+    show: true,
+    parent: mainWindow,
+    modal: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  aboutWindow.maximizable = false;
+  aboutWindow.resizable = false;
+  aboutWindow.minimizable = false;
+  aboutWindow.setMenu(null);
+
+  aboutWindow.webContents.openDevTools();
+
+  if (ABOUT_WINDOW_VITE_DEV_SERVER_URL) {
+    console.log("loading vite dev server");
+    aboutWindow.loadURL(`${ABOUT_WINDOW_VITE_DEV_SERVER_URL}`);
+  } else {
+    aboutWindow.loadFile(path.join(__dirname, `../renderer/${ABOUT_WINDOW_VITE_NAME}/index.html`));
+  }
+};
+
+const aboutMenuItem = new MenuItem({
+  label: "About",
+  click: createAboutWindow,
+});
+
+// Add the "About" menu item to the "Help" menu
+const helpMenu = menu.items.find((item) => item.role === "help");
+if (helpMenu) {
+  helpMenu.submenu.append(aboutMenuItem);
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -72,9 +116,6 @@ app.on("activate", () => {
     createWindow();
   }
 });
-
-const menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
 
 ipcMain.handle("check-sitemap", async (event, websiteUrl: string) => {
   const pageCount = await checkAndParseSitemap(websiteUrl);
