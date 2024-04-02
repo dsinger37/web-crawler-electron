@@ -33,8 +33,6 @@ const createWindow = () => {
     },
   });
 
-  mainWindow.webContents.openDevTools();
-
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
@@ -74,7 +72,9 @@ const createAboutWindow = () => {
   aboutWindow.minimizable = false;
   aboutWindow.setMenu(null);
 
-  aboutWindow.webContents.openDevTools();
+  if (process.env.NODE_ENV === "development") {
+    aboutWindow.webContents.openDevTools();
+  }
 
   if (ABOUT_WINDOW_VITE_DEV_SERVER_URL) {
     console.log("loading vite dev server");
