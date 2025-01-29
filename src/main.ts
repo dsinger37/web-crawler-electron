@@ -181,6 +181,9 @@ ipcMain.handle("crawl-website", async (event, websiteUrl: string, maxRequests: n
       // This is just to give the user an idea of how many URLs were found on the website. If we want to include excluded URLs in the count, we can do that by using "links" instead of "filteredLinks".
       // NOTE: We could possibly add a setting to include/exclude excluded URLs from the discovered URL count
       filteredLinks.forEach((link) => discoveredUrls.add(link));
+      // logger.info(`Discovered ${filteredLinks.length} new links on ${request.url}`);
+      // log all of the discovered URLs
+      // logger.info(`Discovered URLs: ${filteredLinks.join("\n")}`);
 
       await enqueueLinks({
         // TODO: Add a setting to enable crawling subdomains using the "same-hostname" strategy
