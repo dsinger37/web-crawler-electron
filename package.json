@@ -53,7 +53,7 @@
     "tailwindcss": "^3.4.3",
     "winston": "^3.17.0"
   },
-  "packageManager": "yarn@4.1.1",
+  "packageManager": "yarn@4.6.0+sha512.5383cc12567a95f1d668fbe762dfe0075c595b4bfff433be478dbbe24e05251a8e8c3eb992a986667c1d53b6c3a9c85b8398c35a960587fbd9fa3a0915406728",
   "resolutions": {
     "header-generator@npm:^2.1.49": "patch:header-generator@npm%3A2.1.49#~/.yarn/patches/header-generator-npm-2.1.49-ccb42d1d58.patch",
     "header-generator@npm:^2.1.41": "patch:header-generator@npm%3A2.1.49#~/.yarn/patches/header-generator-npm-2.1.49-ccb42d1d58.patch"
