@@ -5,8 +5,7 @@
     "email": "dsinger@digitalmagistery.com"
   },
   "description": "A web crawler",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
   "version": "0.1.0-alpha.1",
   "main": ".vite/build/main.js",
   "scripts": {
